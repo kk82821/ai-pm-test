@@ -3,159 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI产品经理潜力评估工具</title>
+    <title>AI PM 实习生生存挑战 - 转正答辩版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <style>
-        .option-btn { @apply w-full text-left p-4 mb-3 border rounded-lg transition-all hover:bg-blue-50 hover:border-blue-400 active:bg-blue-100; }
-        .hidden { display: none; }
+        .pixel-border { border: 4px solid #1e293b; box-shadow: 6px 6px 0px #1e293b; }
+        .choice-card { @apply w-full p-4 mb-4 bg-white border-2 border-slate-200 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 transition-all text-left animate__animated animate__fadeInUp; }
+        .stat-tag { @apply px-2 py-1 bg-slate-100 rounded text-xs font-bold text-slate-500; }
+        .stress-mode { background-color: #fef2f2 !important; border-color: #ef4444 !important; }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen py-10 px-4">
-    <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
-        <div class="bg-blue-600 p-6 text-white text-center">
-            <h1 class="text-2xl font-bold">AI 产品经理大厂入职潜力评估</h1>
-            <p class="text-blue-100 mt-2 text-sm">针对校招/转岗同学的综合能力测试</p>
-        </div>
+<body class="bg-indigo-50 min-h-screen flex items-center justify-center p-4 font-sans">
 
-        <div id="start-screen" class="p-8 text-center">
-            <div class="mb-6 text-gray-600 leading-relaxed text-left">
-                <p class="mb-2">本测试将从以下维度进行深度评估：</p>
-                <ul class="list-disc ml-5 space-y-1">
-                    <li><b>产品基本功：</b>逻辑与文档能力</li>
-                    <li><b>业务 Sense：</b>商业洞察与价值判断</li>
-                    <li><b>AI 敏感度：</b>大模型边界与技术理解</li>
-                    <li><b>情商与沟通：</b>跨部门协作与抗压</li>
-                </ul>
+    <div id="game-container" class="max-w-md w-full bg-white pixel-border rounded-lg overflow-hidden flex flex-col transition-colors duration-500">
+        <div class="p-4 bg-slate-800 text-white flex justify-between items-center">
+            <div>
+                <span class="text-[10px] uppercase tracking-widest text-slate-400">心智抗压值 (HP)</span>
+                <div class="flex space-x-1 mt-1" id="hp-container">❤️❤️❤️</div>
             </div>
-            <button onclick="startQuiz()" class="bg-blue-600 text-white px-10 py-3 rounded-full font-bold shadow-lg hover:bg-blue-700">开始评估</button>
-        </div>
-
-        <div id="quiz-screen" class="p-8 hidden">
-            <div class="mb-4 flex justify-between items-center text-sm text-gray-400">
-                <span id="category-label" class="font-bold text-blue-500">维度：AI敏感度</span>
-                <span id="progress-label">1/5</span>
+            <div class="text-right">
+                <span class="text-[10px] uppercase tracking-widest text-slate-400">当前阶段</span>
+                <div id="stage-name" class="font-bold text-sm text-indigo-300">未入职</div>
             </div>
-            <h2 id="question-text" class="text-xl font-bold mb-6 text-gray-800">问题加载中...</h2>
-            <div id="options-container"></div>
         </div>
 
-        <div id="result-screen" class="p-8 hidden">
-            <h2 class="text-2xl font-bold text-center mb-6">评估报告</h2>
-            <canvas id="scoreChart" width="400" height="400"></canvas>
-            <div id="result-text" class="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200"></div>
-            <button onclick="location.reload()" class="w-full mt-6 py-3 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50">重新测试</button>
+        <div id="main-content" class="p-6 flex-grow">
+            <div id="start-screen" class="text-center py-8">
+                <div class="text-6xl mb-6">🐣</div>
+                <h1 class="text-2xl font-black text-slate-800 mb-4">AI PM 实习生<br>从 0 到 1 生存挑战</h1>
+                <p class="text-slate-500 text-sm mb-8 leading-relaxed">
+                    你将以实习生的身份进入某大厂 AI 核心项目组。你需要通过立项、研发、撕逼、直至最后的<b>转正答辩</b>。只有成功 Landing 的人才能拿到 Offer。
+                </p>
+                <button onclick="startGame()" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition-all">开始入职</button>
+            </div>
+
+            <div id="stage-screen" class="hidden">
+                <div id="scene-header" class="mb-6">
+                    <div id="scene-icon" class="text-5xl mb-4"></div>
+                    <h2 id="scene-title" class="text-xl font-black text-slate-800 mb-2"></h2>
+                    <p id="scene-desc" class="text-slate-600 text-sm leading-relaxed"></p>
+                </div>
+                <div id="choices-list"></div>
+            </div>
+
+            <div id="result-screen" class="hidden text-center py-4">
+                <h2 class="text-2xl font-black text-slate-800 mb-2">实习报告单</h2>
+                <div class="w-full h-64 mb-6">
+                    <canvas id="abilityChart"></canvas>
+                </div>
+                <div id="final-verdict" class="text-left bg-slate-50 p-5 rounded-2xl border-2 border-slate-100 text-slate-700 text-sm leading-relaxed"></div>
+                <button onclick="location.reload()" class="mt-8 text-indigo-600 font-bold hover:underline">重新挑战新的人生</button>
+            </div>
         </div>
     </div>
 
     <script>
-        const questions = [
+        const stages = [
             {
-                category: "AI 敏感度",
-                q: "当用户反馈 AI 聊天机器人‘胡言乱语’时，你首先会从哪个维度去排查改进？",
-                options: [
-                    { text: "立刻要求后端更换更高参数量的模型", score: { ai: 1, basic: 1 } },
-                    { text: "分析 Bad Case，尝试通过 Prompt Engineering 增加约束", score: { ai: 3, basic: 2 } },
-                    { text: "认为这是 AI 幻觉，无法解决，只能加免责声明", score: { ai: 0, basic: 1 } },
-                    { text: "检查 RAG（检索增强生成）召回的内容是否包含错误信息", score: { ai: 3, biz: 2 } }
+                title: "需求评审会的暗箭",
+                icon: "💡",
+                desc: "老板想做‘情感陪伴AI’，研发组长当众质疑：‘模型现有的延时根本做不到实时共情，你要硬做就是在浪费资源。’ 你怎么回？",
+                choices: [
+                    { t: "“技术做不到就去想办法优化，你是研发还是我是研发？”", s: { eq:0, basic:1, hp:-1 }, f: "研发组长当场黑脸，并在之后的排期中处处针对你。HP-1" },
+                    { t: "“我们可以先做异步录音回馈方案，规避延时，先验证用户对共情的需求。”", s: { basic:3, biz:2, ai:2 }, f: "务实的方案赢得了大家的尊重。Landing 概率提升！" },
+                    { t: "“那咱们就不做了，听您的，您说做啥我写啥。”", s: { eq:2, biz:0, hp:-1 }, f: "老板觉得你没有产品主见，像个传话筒。HP-1" }
                 ]
             },
             {
-                category: "产品基本功",
-                q: "设计一个 AI 生图工具，用户反馈‘生成的图片虽然漂亮但完全不符合我的要求’，你会：",
-                options: [
-                    { text: "在输入框下增加常用 Prompt 标签引导用户", score: { basic: 3, biz: 1 } },
-                    { text: "建议研发增加 GPU 算力提高图片分辨率", score: { basic: 0, ai: 0 } },
-                    { text: "调研引入‘图片局部重绘（Inpaint）’或多模态反馈功能", score: { basic: 2, ai: 3 } }
+                title: "算力成本的博弈",
+                icon: "💰",
+                desc: "项目灰度测试发现，由于调用的是最贵的 GPT-4 接口，每单成本 5 毛钱，而用户打赏只有 2 毛钱。老板让你立刻扭亏为盈。",
+                choices: [
+                    { t: "“立刻切成国产小模型，虽然笨点但便宜，把毛利拉正。”", s: { biz:3, ai:1 }, f: "成本降了，但用户反馈 AI 变傻了，你需要后续处理留存问题。" },
+                    { t: "“优化 Prompt，减少 Token 消耗，并加入激励视频广告贴补成本。”", s: { biz:2, basic:3, ai:3 }, f: "典型的平衡思维，既保住了效果又减了亏。优秀！" },
+                    { t: "“大厂项目不该看短期的钱，建议老板继续烧钱换规模。”", s: { biz:0, eq:1, hp:-1 }, f: "老板把你叫到办公室‘聊了聊’公司今年的降本增效指标。HP-1" }
                 ]
             },
             {
-                category: "业务 Sense",
-                q: "大厂自研一个大模型，但推理成本是传统搜索的 10 倍，作为 PM 你该如何平衡？",
-                options: [
-                    { text: "只给付费用户用，普通用户用回老版搜索", score: { biz: 2, basic: 1 } },
-                    { text: "探索高价值高客单价场景（如 B 端法律/医疗顾问）来覆盖成本", score: { biz: 3, ai: 2 } },
-                    { text: "不管成本，先圈用户，等规模效应上来了成本自然就低了", score: { biz: 1, basic: 1 } }
-                ]
-            },
-            {
-                category: "情商/沟通",
-                q: "算法同学坚持认为某项模型优化很有技术含量，但你认为对用户体验提升很小，你会：",
-                options: [
-                    { text: "直接跟他说‘这东西没用，不要浪费时间’", score: { eq: 0 } },
-                    { text: "肯定技术价值，但展示当前产品排期的 ROI 对比，争取共识", score: { eq: 3, basic: 2 } },
-                    { text: "既然他说有用就做吧，研发开心最重要", score: { eq: 1, biz: 0 } }
+                title: "高压转正答辩",
+                icon: "👨‍⚖️",
+                desc: "这是最后关头！评委冷冷地问：‘你的项目虽然上线了，但这种靠套壳接口的东西，如果明天公司把资源撤了，你还有什么价值？’",
+                choices: [
+                    { t: "“我沉淀了一套私有化的场景数据集和用户行为路径，这是模型带不走的壁垒。”", s: { ai:3, biz:3, eq:3 }, f: "大佬们露出了欣慰的笑容。你不仅懂产品，还懂核心竞争力。" },
+                    { t: "“我在实习期间非常努力，每天加班到深夜，文档写得最整齐。”", s: { basic:2, eq:0, hp:-2 }, f: "评委打断了你：‘大厂不缺苦劳，缺功劳。’ HP大减！" },
+                    { t: "“我可以快速迁移到任何模型上，我的价值在于对用户痛点的敏锐洞察。”", s: { basic:2, biz:2, eq:2 }, f: "中规中矩的回答，勉强稳住了局面。" }
                 ]
             }
         ];
 
-        let currentQuestion = 0;
-        let totalScores = { ai: 0, basic: 0, biz: 0, eq: 0 };
+        let cur = 0;
+        let hp = 3;
+        let stats = { ai:0, biz:0, eq:0, basic:0 };
 
-        function startQuiz() {
+        function startGame() {
             document.getElementById('start-screen').classList.add('hidden');
-            document.getElementById('quiz-screen').classList.remove('hidden');
-            showQuestion();
+            document.getElementById('stage-screen').classList.remove('hidden');
+            render();
         }
 
-        function showQuestion() {
-            const q = questions[currentQuestion];
-            document.getElementById('category-label').innerText = `维度：${q.category}`;
-            document.getElementById('progress-label').innerText = `${currentQuestion + 1}/${questions.length}`;
-            document.getElementById('question-text').innerText = q.q;
+        function render() {
+            if (hp <= 0) return finish(false);
+            if (cur >= stages.length) return finish(true);
+
+            const s = stages[cur];
+            // 答辩环节变色
+            if (s.title.includes("答辩")) {
+                document.getElementById('game-container').classList.add('stress-mode');
+            }
+
+            document.getElementById('stage-name').innerText = s.title;
+            document.getElementById('scene-icon').innerText = s.icon;
+            document.getElementById('scene-title').innerText = s.title;
+            document.getElementById('scene-desc').innerText = s.desc;
             
-            const container = document.getElementById('options-container');
-            container.innerHTML = '';
-            q.options.forEach(opt => {
+            const list = document.getElementById('choices-list');
+            list.innerHTML = '';
+            
+            s.choices.forEach(c => {
                 const btn = document.createElement('button');
-                btn.className = 'option-btn';
-                btn.innerText = opt.text;
-                btn.onclick = () => selectOption(opt.score);
-                container.appendChild(btn);
+                btn.className = 'choice-card';
+                btn.innerHTML = `<p class="text-sm font-bold text-slate-700">${c.t}</p>`;
+                btn.onclick = () => {
+                    alert(c.f);
+                    for(let k in c.s) if(k!=='hp') stats[k]+=c.s[k];
+                    if(c.s.hp) hp += c.s.hp;
+                    cur++;
+                    updateStatus();
+                    render();
+                };
+                list.appendChild(btn);
             });
         }
 
-        function selectOption(score) {
-            for (let key in score) {
-                totalScores[key] += score[key];
-            }
-            currentQuestion++;
-            if (currentQuestion < questions.length) {
-                showQuestion();
-            } else {
-                showResult();
-            }
+        function updateStatus() {
+            document.getElementById('hp-container').innerText = '❤️'.repeat(Math.max(0, hp));
         }
 
-        function showResult() {
-            document.getElementById('quiz-screen').classList.add('hidden');
+        function finish(isSuccess) {
+            document.getElementById('stage-screen').classList.add('hidden');
+            document.getElementById('game-container').classList.remove('stress-mode');
             document.getElementById('result-screen').classList.remove('hidden');
-
-            const ctx = document.getElementById('scoreChart').getContext('2d');
-            new Chart(ctx, {
+            
+            new Chart(document.getElementById('abilityChart'), {
                 type: 'radar',
                 data: {
-                    labels: ['AI 敏感度', '产品基本功', '业务 Sense', '情商沟通'],
+                    labels: ['AI 原生思维', '商业化 Sense', '沟通抗压', '产品基本功'],
                     datasets: [{
-                        label: '得分情况',
-                        data: [totalScores.ai, totalScores.basic, totalScores.biz, totalScores.eq],
-                        backgroundColor: 'rgba(37, 99, 235, 0.2)',
-                        borderColor: 'rgb(37, 99, 235)',
-                        pointBackgroundColor: 'rgb(37, 99, 235)'
+                        data: [stats.ai, stats.biz, stats.eq, stats.basic],
+                        backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                        borderColor: '#6366f1',
+                        borderWidth: 2
                     }]
                 },
-                options: {
-                    scales: { r: { beginAtZero: true, max: 6 } }
+                options: { 
+                    scales: { r: { min: 0, max: 9, ticks: { display: false } } },
+                    plugins: { legend: { display: false } }
                 }
             });
 
-            // 简单的逻辑分析
-            let advice = "";
-            if(totalScores.ai >= 5) advice = "🚀 **你具有极强的 AI Native 思维！** 大厂 AI 实验室或核心业务组非常适合你。";
-            else if(totalScores.eq < 2) advice = "💡 **建议：** 你的技术理解不错，但大厂 PM 极度看重协调能力，建议加强沟通逻辑。";
-            else advice = "📈 **中规中矩：** 你已具备入职门槛，建议多关注 AI 行业真实落地的商业案例。";
-            
-            document.getElementById('result-text').innerHTML = advice;
+            let v = "";
+            if (!isSuccess) {
+                v = "<b>鉴定结果：Landing 失败 ❌</b><br>大厂的节奏和政治环境对你来说可能太沉重了。你对技术有热情，但在利益博弈和抗压能力上还有待提升。建议先在小团队寻找‘产品主权’。";
+            } else {
+                const total = stats.ai + stats.biz + stats.eq + stats.basic;
+                if (total > 20) {
+                    v = "<b>鉴定结果：顶级 Offer 🏆</b><br>你简直是天生的 AI 产品经理！不仅懂底层原理，还能在高压答辩中反杀评委。大厂 P10 看了都要直呼内行。";
+                } else {
+                    v = "<b>鉴定结果：顺利转正 ✅</b><br>你具备了在大厂生存的基本素质。虽然在一些商业判断上略显稚嫩，但你的 Landing 能力很强，能够按时交付结果。";
+                }
+            }
+            document.getElementById('final-verdict').innerHTML = v;
         }
     </script>
 </body>
