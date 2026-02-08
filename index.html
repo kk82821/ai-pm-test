@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI产品经理潜力评估工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .option-btn { @apply w-full text-left p-4 mb-3 border rounded-lg transition-all hover:bg-blue-50 hover:border-blue-400 active:bg-blue-100; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen py-10 px-4">
+    <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div class="bg-blue-600 p-6 text-white text-center">
+            <h1 class="text-2xl font-bold">AI 产品经理大厂入职潜力评估</h1>
+            <p class="text-blue-100 mt-2 text-sm">针对校招/转岗同学的综合能力测试</p>
+        </div>
+
+        <div id="start-screen" class="p-8 text-center">
+            <div class="mb-6 text-gray-600 leading-relaxed text-left">
+                <p class="mb-2">本测试将从以下维度进行深度评估：</p>
+                <ul class="list-disc ml-5 space-y-1">
+                    <li><b>产品基本功：</b>逻辑与文档能力</li>
+                    <li><b>业务 Sense：</b>商业洞察与价值判断</li>
+                    <li><b>AI 敏感度：</b>大模型边界与技术理解</li>
+                    <li><b>情商与沟通：</b>跨部门协作与抗压</li>
+                </ul>
+            </div>
+            <button onclick="startQuiz()" class="bg-blue-600 text-white px-10 py-3 rounded-full font-bold shadow-lg hover:bg-blue-700">开始评估</button>
+        </div>
+
+        <div id="quiz-screen" class="p-8 hidden">
+            <div class="mb-4 flex justify-between items-center text-sm text-gray-400">
+                <span id="category-label" class="font-bold text-blue-500">维度：AI敏感度</span>
+                <span id="progress-label">1/5</span>
+            </div>
+            <h2 id="question-text" class="text-xl font-bold mb-6 text-gray-800">问题加载中...</h2>
+            <div id="options-container"></div>
+        </div>
+
+        <div id="result-screen" class="p-8 hidden">
+            <h2 class="text-2xl font-bold text-center mb-6">评估报告</h2>
+            <canvas id="scoreChart" width="400" height="400"></canvas>
+            <div id="result-text" class="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200"></div>
+            <button onclick="location.reload()" class="w-full mt-6 py-3 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50">重新测试</button>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                category: "AI 敏感度",
+                q: "当用户反馈 AI 聊天机器人‘胡言乱语’时，你首先会从哪个维度去排查改进？",
+                options: [
+                    { text: "立刻要求后端更换更高参数量的模型", score: { ai: 1, basic: 1 } },
+                    { text: "分析 Bad Case，尝试通过 Prompt Engineering 增加约束", score: { ai: 3, basic: 2 } },
+                    { text: "认为这是 AI 幻觉，无法解决，只能加免责声明", score: { ai: 0, basic: 1 } },
+                    { text: "检查 RAG（检索增强生成）召回的内容是否包含错误信息", score: { ai: 3, biz: 2 } }
+                ]
+            },
+            {
+                category: "产品基本功",
+                q: "设计一个 AI 生图工具，用户反馈‘生成的图片虽然漂亮但完全不符合我的要求’，你会：",
+                options: [
+                    { text: "在输入框下增加常用 Prompt 标签引导用户", score: { basic: 3, biz: 1 } },
+                    { text: "建议研发增加 GPU 算力提高图片分辨率", score: { basic: 0, ai: 0 } },
+                    { text: "调研引入‘图片局部重绘（Inpaint）’或多模态反馈功能", score: { basic: 2, ai: 3 } }
+                ]
+            },
+            {
+                category: "业务 Sense",
+                q: "大厂自研一个大模型，但推理成本是传统搜索的 10 倍，作为 PM 你该如何平衡？",
+                options: [
+                    { text: "只给付费用户用，普通用户用回老版搜索", score: { biz: 2, basic: 1 } },
+                    { text: "探索高价值高客单价场景（如 B 端法律/医疗顾问）来覆盖成本", score: { biz: 3, ai: 2 } },
+                    { text: "不管成本，先圈用户，等规模效应上来了成本自然就低了", score: { biz: 1, basic: 1 } }
+                ]
+            },
+            {
+                category: "情商/沟通",
+                q: "算法同学坚持认为某项模型优化很有技术含量，但你认为对用户体验提升很小，你会：",
+                options: [
+                    { text: "直接跟他说‘这东西没用，不要浪费时间’", score: { eq: 0 } },
+                    { text: "肯定技术价值，但展示当前产品排期的 ROI 对比，争取共识", score: { eq: 3, basic: 2 } },
+                    { text: "既然他说有用就做吧，研发开心最重要", score: { eq: 1, biz: 0 } }
+                ]
+            }
+        ];
+
+        let currentQuestion = 0;
+        let totalScores = { ai: 0, basic: 0, biz: 0, eq: 0 };
+
+        function startQuiz() {
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            showQuestion();
+        }
+
+        function showQuestion() {
+            const q = questions[currentQuestion];
+            document.getElementById('category-label').innerText = `维度：${q.category}`;
+            document.getElementById('progress-label').innerText = `${currentQuestion + 1}/${questions.length}`;
+            document.getElementById('question-text').innerText = q.q;
+            
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            q.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = opt.text;
+                btn.onclick = () => selectOption(opt.score);
+                container.appendChild(btn);
+            });
+        }
+
+        function selectOption(score) {
+            for (let key in score) {
+                totalScores[key] += score[key];
+            }
+            currentQuestion++;
+            if (currentQuestion < questions.length) {
+                showQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+
+            const ctx = document.getElementById('scoreChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['AI 敏感度', '产品基本功', '业务 Sense', '情商沟通'],
+                    datasets: [{
+                        label: '得分情况',
+                        data: [totalScores.ai, totalScores.basic, totalScores.biz, totalScores.eq],
+                        backgroundColor: 'rgba(37, 99, 235, 0.2)',
+                        borderColor: 'rgb(37, 99, 235)',
+                        pointBackgroundColor: 'rgb(37, 99, 235)'
+                    }]
+                },
+                options: {
+                    scales: { r: { beginAtZero: true, max: 6 } }
+                }
+            });
+
+            // 简单的逻辑分析
+            let advice = "";
+            if(totalScores.ai >= 5) advice = "🚀 **你具有极强的 AI Native 思维！** 大厂 AI 实验室或核心业务组非常适合你。";
+            else if(totalScores.eq < 2) advice = "💡 **建议：** 你的技术理解不错，但大厂 PM 极度看重协调能力，建议加强沟通逻辑。";
+            else advice = "📈 **中规中矩：** 你已具备入职门槛，建议多关注 AI 行业真实落地的商业案例。";
+            
+            document.getElementById('result-text').innerHTML = advice;
+        }
+    </script>
+</body>
+</html>
